@@ -1,0 +1,120 @@
+# Production release workflow — `build-release.yml`
+
+Produces a **signed AAB** ready for the Google Play Store.
+Triggered manually from any branch via `workflow_dispatch`.
+Creates a GitHub Release and attaches the AAB as a release asset.
+
+```yaml
+name: Build Release AAB
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_tag:
+        description: 'Release tag (e.g. v1.2.0) — must match the version already set in source'
+        required: true
+        type: string
+
+jobs:
+  build:
+    name: Signed AAB
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'          # match your local version
+          cache: 'npm'
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/**/*.gradle*', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Vite build
+        run: npm run build
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Decode keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > /tmp/release.keystore
+
+      - name: Build release AAB
+        working-directory: android
+        run: |
+          ./gradlew bundleRelease --no-daemon \
+            -Pandroid.injected.signing.store.file=/tmp/release.keystore \
+            -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
+            -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
+            -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
+
+      - name: Verify signature
+        run: |
+          AAB=android/app/build/outputs/bundle/release/app-release.aab
+          # bundletool verify (basic check that the file is a valid signed AAB)
+          echo "AAB size: $(du -sh $AAB | cut -f1)"
+          # Unzip and check META-INF for signature files
+          unzip -l $AAB | grep -E "META-INF.*\.(RSA|SF|MF)" && echo "Signature files found ✓"
+
+      - name: Rename AAB with version tag
+        run: |
+          cp android/app/build/outputs/bundle/release/app-release.aab \
+             app-${{ github.event.inputs.version_tag }}.aab
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version_tag }}
+          name: ${{ github.event.inputs.version_tag }}
+          draft: false
+          prerelease: false
+          files: app-${{ github.event.inputs.version_tag }}.aab
+          generate_release_notes: true  # auto-fills from commits since last tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Clean up keystore
+        if: always()      # runs even if a previous step failed
+        run: rm -f /tmp/release.keystore
+```
+
+## Notes
+
+- **Version in source must be bumped before triggering** — the workflow does not edit files.
+  The `version_tag` input is for the GitHub tag and release name only.
+- `bundleRelease` with `-P` flags passes signing info directly to Gradle without touching
+  `build.gradle`. This avoids committing signing config to the repo.
+- `softprops/action-gh-release` requires no extra permission setup — `GITHUB_TOKEN` is
+  provided automatically by GitHub Actions.
+- The keystore cleanup step uses `if: always()` so it runs even on failure, preventing
+  the temp file from lingering on the runner.
+- If you want a **draft release** for review before publishing, set `draft: true`.
+
+## Triggering a release
+
+1. Go to **Actions → Build Release AAB → Run workflow**
+2. Select the branch (any branch works)
+3. Enter the version tag (e.g. `v1.2.0`)
+4. Click **Run workflow**
+
+The AAB will be attached to a GitHub Release at that tag.

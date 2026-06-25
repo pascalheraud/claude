@@ -1,0 +1,82 @@
+# Dev build workflow — `build-dev.yml`
+
+Produces a **debug APK** on every push to any branch.
+No signing required. Installable via `adb install app-debug.apk`.
+
+```yaml
+name: Build Dev APK
+
+on:
+  push:
+    branches:
+      - '**'
+
+jobs:
+  build:
+    name: Debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'          # match your local version
+          cache: 'npm'
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/**/*.gradle*', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Vite build
+        run: npm run build
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-${{ github.sha }}
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+```
+
+## Usage after download
+
+```bash
+# Enable USB debugging on the device, then:
+adb install app-debug.apk
+
+# Or if multiple devices are connected:
+adb -s <device-serial> install app-debug.apk
+```
+
+## Notes
+
+- The artifact name includes the commit SHA so builds don't overwrite each other
+- `retention-days: 7` keeps storage usage low — adjust if you need longer
+- If you have multiple build variants (e.g. `staging`), duplicate the `assembleDebug`
+  step with `assembleStagingDebug` and upload a second artifact
+- `npm ci` is used instead of `npm install` — it's faster and deterministic in CI
