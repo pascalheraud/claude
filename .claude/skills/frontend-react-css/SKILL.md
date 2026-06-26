@@ -128,23 +128,23 @@ Minimal resets — only what is genuinely needed in 2026.
 
 ```scss
 *, *::before, *::after {
-  box-sizing: border-box;
+  box-sizing: border-box;   // universal, essential
 }
 
 body {
-  margin: 0;
+  margin: 0;                // browsers add 8px by default
 }
 
 img, video {
   max-width: 100%;
-  display: block;
+  display: block;           // removes gap below images
 }
 
 button {
   cursor: pointer;
   border: none;
   background: none;
-  font: inherit;
+  font: inherit;            // buttons don't inherit font by default
   padding: 0;
 }
 
@@ -160,7 +160,7 @@ ul, ol {
 }
 
 h1, h2, h3, h4, h5, h6, p {
-  margin: 0;
+  margin: 0;                // removes browser default margins
 }
 ```
 
@@ -207,7 +207,7 @@ ProductCard.module.scss   ← scoped to this component only
   background:    $color-surface;
   border:        1.5px solid $color-border;
   border-radius: $radius-md;
-  padding:       $spacing-md;
+  padding:       $spacing-md;        // use variables, never magic numbers
   transition:    box-shadow $transition-normal, transform $transition-normal;
 
   &:hover {
@@ -222,18 +222,24 @@ ProductCard.module.scss   ← scoped to this component only
 Use nesting for states and pseudo-classes. Do not go deeper than 3 levels.
 
 ```scss
-// ✅ shallow nesting
+// ✅ shallow nesting — clear and maintainable
 .card {
   background: $color-surface;
 
-  &:hover          { box-shadow: $shadow-md; }
+  &:hover          { box-shadow: $shadow-md; }   // hover state
   &:focus-visible  { outline: 2px solid $color-primary; }
 
   &.selected       { border-color: $color-primary; }
   &.disabled       { opacity: 0.5; cursor: default; }
 }
 
-// ❌ too deep
+.title {
+  font-size:   $font-size-md;
+  font-weight: $font-weight-bold;
+  color:       $color-text-primary;
+}
+
+// ❌ too deep — hard to read
 .card {
   .header {
     .title {
@@ -245,10 +251,10 @@ Use nesting for states and pseudo-classes. Do not go deeper than 3 levels.
 
 ### BEM-inspired naming (without the verbose syntax)
 
-CSS Modules scopes everything automatically — no need for full BEM syntax.
+Name classes after their role within the component. Since CSS Modules scopes everything automatically, you do not need the full BEM `block__element--modifier` syntax.
 
 ```scss
-// ✅ clear, no BEM verbosity needed
+// ✅ clear, no BEM verbosity needed — CSS Modules handles scoping
 .card      { … }
 .header    { … }
 .title     { … }
@@ -394,7 +400,15 @@ css: {
 }
 ```
 
-This automatically imports variables into every `.module.scss` file — no `@use` needed.
+This automatically imports variables into every `.module.scss` file — no `@use` needed:
+
+```scss
+// ✅ variables available without explicit import
+.card {
+  background: $color-surface;
+  padding:    $space-4;
+}
+```
 
 ---
 
