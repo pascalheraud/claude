@@ -81,6 +81,7 @@ Check what generic skills already exist in the shared repo (README.md). If a new
 ## Maintenance rules
 
 - When a new pattern is established in code, update the relevant skill immediately.
+- **If the pattern is generic (not tied to one project's domain/business logic), edit it in the shared `claude` skills module first**, not in the project-local skill. Project skills should only hold project-specific guidance and `[[reference]]` links into the generic skill — never re-explain a generic pattern locally, even partially.
 - When a project skill duplicates content already in a generic skill, remove the duplicate and add a `[[reference]]`.
 - When a skill becomes stale (the pattern it describes no longer exists), update or delete it.
 - **When adding or renaming a skill that belongs to a collection with a README**, update the README to reflect the change: add a row in the correct section, use the right prefix group, and include a one-line description.

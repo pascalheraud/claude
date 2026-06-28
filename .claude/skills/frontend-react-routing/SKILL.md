@@ -45,56 +45,124 @@ createRoot(document.getElementById('root')!).render(
 
 ## Route definition
 
-Define all routes in one place — `App.tsx` or a dedicated `routes.tsx`.
+Define every route path as a typed constant in a dedicated `routes.ts`. Never hardcode a path string in a component — both `<Route path>` declarations and every `navigate(...)` / `<Link to>` call read from this one file.
+
+```ts
+// routes.ts
+export const ROUTES = {
+  dashboard:       '/',
+  shop:            '/shop',
+  cart:            '/cart',
+  checkout:        '/checkout',
+  account:         '/account',
+  accountSettings: '/account/settings',
+} as const;
+
+/** Static (parameter-free) route paths */
+export type StaticRoute = typeof ROUTES[keyof typeof ROUTES];
+
+/**
+ * Builders for routes that take a param. Each return type is a template
+ * literal type, not `string` — this is what lets `AppRoute` (below) reject
+ * arbitrary strings while still accepting the built path.
+ */
+export const buildRoute = {
+  product: (id: string): `/shop/${string}` => `/shop/${id}`,
+} as const;
+
+type BuiltRoute = ReturnType<typeof buildRoute[keyof typeof buildRoute]>;
+
+/** Every path the app can navigate to — static or built */
+export type AppRoute = StaticRoute | BuiltRoute;
+```
 
 ```tsx
 // App.tsx
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { ROUTES } from './routes';
 
 export function App() {
   return (
     <Routes>
-      <Route path="/"                  element={<DashboardScreen />} />
-      <Route path="/shop"              element={<ShopScreen />} />
-      <Route path="/shop/:productId"   element={<ProductScreen />} />
-      <Route path="/cart"              element={<CartScreen />} />
-      <Route path="/checkout"          element={<CheckoutScreen />} />
-      <Route path="/account"           element={<AccountScreen />} />
-      <Route path="/account/settings"  element={<SettingsScreen />} />
-      <Route path="*"                  element={<Navigate to="/" replace />} />
+      <Route path={ROUTES.dashboard}        element={<DashboardScreen />} />
+      <Route path={ROUTES.shop}             element={<ShopScreen />} />
+      <Route path="/shop/:productId"        element={<ProductScreen />} />
+      <Route path={ROUTES.cart}             element={<CartScreen />} />
+      <Route path={ROUTES.checkout}         element={<CheckoutScreen />} />
+      <Route path={ROUTES.account}          element={<AccountScreen />} />
+      <Route path={ROUTES.accountSettings}  element={<SettingsScreen />} />
+      <Route path="*"                       element={<Navigate to={ROUTES.dashboard} replace />} />
     </Routes>
   );
 }
 ```
 
+Dynamic segments (`:productId`) still have to be written as a literal in `<Route path>` — React Router needs the pattern, not a value. `ROUTES`/`buildRoute` exist so every *consumer* of a route (links, navigation, redirects) goes through one typed surface instead of retyping `/shop/${id}` everywhere.
+
 ---
 
 ## Navigation
 
+### A typed `navigate` — `useAppNavigate`
+
+Wrap `useNavigate` so it only accepts an `AppRoute`. A typo or a route that was renamed in `routes.ts` becomes a compile error instead of a silent dead link.
+
+```ts
+// useAppNavigate.ts
+import { useNavigate, type NavigateOptions } from 'react-router-dom';
+import type { AppRoute } from './routes';
+
+export interface AppNavigate {
+  (to: AppRoute, options?: NavigateOptions): void;
+  (delta: number): void; // history.go(delta) — e.g. navigate(-1) for Back
+}
+
+export function useAppNavigate(): AppNavigate {
+  const navigate = useNavigate();
+  return navigate as AppNavigate;
+}
+```
+
+```tsx
+// ✅ only known routes type-check
+const navigate = useAppNavigate();
+navigate(ROUTES.cart);
+navigate(buildRoute.product(product.id));
+navigate(-1); // Back button — see Rule 2 below
+
+// ❌ compile error — not an AppRoute
+navigate('/shop/' + product.id);
+navigate('/shpo');
+```
+
+The two call signatures on `AppNavigate` mirror React Router's own overloaded `NavigateFunction` type, so `navigate(-1)` still type-checks while `navigate('/shpo')` does not. Use this hook everywhere instead of importing `useNavigate` from `react-router-dom` directly.
+
 ### Declarative — `<Link>`
 
-Use `<Link>` for navigation that the user triggers explicitly (menu items, product tiles).
+Use `<Link>` for navigation that the user triggers explicitly (menu items, product tiles). Same rule applies: pass a `ROUTES`/`buildRoute` value, not a hand-typed string.
 
 ```tsx
 import { Link } from 'react-router-dom';
+import { ROUTES, buildRoute } from './routes';
 
-<Link to="/shop">Shop</Link>
-<Link to={`/shop/${product.id}`}>{product.name}</Link>
+<Link to={ROUTES.shop}>Shop</Link>
+<Link to={buildRoute.product(product.id)}>{product.name}</Link>
 ```
 
-### Programmatic — `useNavigate`
+### Programmatic — `useAppNavigate`
 
-Use `useNavigate` for navigation triggered by code (after form submit, after async action).
+Use it for navigation triggered by code (after form submit, after async action).
 
 ```tsx
-import { useNavigate } from 'react-router-dom';
+import { useAppNavigate } from './useAppNavigate';
+import { ROUTES } from './routes';
 
 export function CheckoutScreen() {
-  const navigate = useNavigate();
+  const navigate = useAppNavigate();
 
   async function handleSubmit() {
     await orderService.place(cart);
-    navigate('/order-confirmation', { replace: true });
+    navigate(ROUTES.checkout, { replace: true }); // adjust to the real confirmation route
   }
 }
 ```
@@ -320,10 +388,11 @@ export function ScrollToTop() {
 
 | Situation | Solution |
 |-----------|---------|
-| Normal link (menu, card) | `<Link to="…">` |
-| Navigate after async action | `useNavigate` + `navigate('…')` |
-| Navigate without adding history | `navigate('…', { replace: true })` |
-| Back button | `navigate(-1)` |
+| Route paths | Typed constants in `routes.ts` (`ROUTES`, `buildRoute`) — never a hand-typed string |
+| Normal link (menu, card) | `<Link to={ROUTES.x}>` |
+| Navigate after async action | `useAppNavigate()` + `navigate(ROUTES.x)` |
+| Navigate without adding history | `navigate(ROUTES.x, { replace: true })` |
+| Back button | `navigate(-1)` (plain `useNavigate`, not `useAppNavigate`) |
 | Read URL param (`:id`) | `useParams()` |
 | Read/write query string | `useSearchParams()` |
 | Pass state through navigation | `navigate('…', { state: { … } })` |
