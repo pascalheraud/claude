@@ -101,3 +101,9 @@ expect(screen.getByText('New').className).toContain('success');
 Test presence/absence of conditionally-rendered markup (e.g. an optional icon) with `.queryBy*` or by asserting a child selector is `null`, not just the happy path.
 
 Prioritize presentational/atom components (no services, no context, no routing) first — they need no mocking, same rationale as pure logic services above. Components wired to services/context/router need their dependencies stubbed or wrapped before they're worth testing; defer those until that pattern is established.
+
+If a component's services/stores are already constructor- or prop-injectable (a common DI convention — e.g. `function Foo({ service = realServiceInstance }: Props)`), prefer passing a minimal stub object cast through `as unknown as ServiceType` over `vi.mock`. No module mocking is needed when the seam already exists in the component's own signature.
+
+For routing, wrap in `<MemoryRouter>`; if the component reads `useParams`, wrap further in `<Routes><Route path="/x/:id" element={<Component .../>} /></Routes>` with a matching `initialEntries` path — rendering the component directly without a matching route leaves params `undefined`.
+
+**Stub stores backed by `useSyncExternalStore` (`Store`/`KeyedStore`) must return a referentially stable snapshot.** A stub `getSnapshot: () => ({ status: 'loaded', value: ... })` that builds a fresh object literal on every call reproduces "Maximum update depth exceeded" — `useSyncExternalStore` assumes nothing changed only if the reference is identical between renders. Hoist the stub's return value to a `const` declared once outside the mock factory (or memoize it), the same fix needed for the real `KeyedStore.getSnapshot` implementation (see the loading-state-sentinel pattern it already uses).
