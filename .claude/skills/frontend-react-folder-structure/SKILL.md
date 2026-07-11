@@ -153,6 +153,25 @@ export const Limits = {
 } as const;
 ```
 
+**Rule: a constant belongs in `constants/` only if more than one file consumes it.** A constant (or static data array) read by a single service/context/component should live next to that consumer instead — either as a module-level `const` above the class, or as a private field — not in a separate `constants/` file nobody else imports.
+
+```ts
+// ❌ separate file, only one consumer
+// constants/langs.ts
+export const LANGUAGES: Language[] = [ /* … */ ];
+
+// services/LangsService.ts
+import { LANGUAGES } from '@constants/langs';
+export class LangsService { /* uses LANGUAGES */ }
+
+// ✅ co-located — nothing else needs to import it separately
+// services/LangsService.ts
+const LANGUAGES: Language[] = [ /* … */ ];
+export class LangsService { /* uses LANGUAGES */ }
+```
+
+If a second consumer shows up later, promote it to `constants/` at that point — don't pre-extract for a hypothetical future reuse.
+
 ---
 
 ## utils/ — Utility functions

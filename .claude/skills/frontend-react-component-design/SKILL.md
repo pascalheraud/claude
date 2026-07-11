@@ -89,19 +89,31 @@ Examples: `Button`, `Badge`, `Avatar`, `Spinner`, `Tag`, `StatusDot`, `Icon`
 
 ### Molecules
 
-Compositions of 2–5 atoms that form a recognisable UI pattern.
+Compositions of 2–5 **atom components** (actually imported and rendered, not just raw HTML elements) that form a recognisable UI pattern.
 
-Traits: coordinate multiple atoms, may have simple internal state (open/closed), still generic.
+Traits: coordinate multiple atoms, may have simple internal state (open/closed), still generic. A molecule with the props stripped out is just a handful of atoms wired together — it has no layout opinion of its own beyond arranging them.
 
-Examples: `Modal`, `Dropdown`, `Toast`, `ConfirmDialog`, `SearchInput`, `DatePicker`
+Examples: `Dropdown`, `ConfirmDialog` (composes `Modal` + `Button`), `SearchInput` (composes an input atom + `IconButton`), `ModalBar` (composes `IconButton`)
 
 ### Organisms
 
-Large generic structures that provide layout or page-level scaffolding.
+Large generic structures that provide layout or page-level scaffolding. They typically accept generic `children` and own the positioning/overlay behaviour around them, even if they don't compose any atoms internally.
 
 Traits: accept `children`, provide context or layout, still generic (no domain knowledge).
 
-Examples: `Card`, `PageWrapper`, `EmptyState`, `ErrorBoundary`, `Sidebar`
+Examples: `Card`, `PageWrapper`, `EmptyState`, `ErrorBoundary`, `Sidebar`, `Modal`, `BottomSheet`, `Toast`/`ToastContainer`
+
+---
+
+## Disambiguating atom vs. molecule vs. organism
+
+Don't classify by feel — apply these checks in order:
+
+1. **Does it render a single HTML element, or a couple of raw elements with no composed atom inside (e.g. a `<span>` + a raw `<button>`)?** → **Atom**, even if it has variant/size props. (`Badge`, `CounterBadge`, `InfoBanner`, `SectionLabel`, `DashedButton` are atoms for this reason — none of them import another `ui/` component.)
+2. **Does it accept generic `children` and exist mainly to provide layout/positioning (overlay, centering, sliding panel, page wrapper) rather than to coordinate specific atoms?** → **Organism**, regardless of internal complexity. (`Modal`, `BottomSheet`, `Card`, `PageWrapper` are organisms for this reason — "accepts children + owns layout" outweighs "doesn't compose atoms".)
+3. **Does it import and render 2–5 other `ui/` components (atoms, or occasionally an organism like `Modal`) to form one specific, non-generic-layout pattern (a dialog, a form field, a header bar)?** → **Molecule**.
+
+When in doubt, check actual imports: grep the component file for `from '@ui/atoms'` or `from '@ui/organisms'`. A component with zero such imports is never a molecule — it's an atom (no composition) or an organism (children + layout).
 
 ---
 

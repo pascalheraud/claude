@@ -35,6 +35,7 @@ Skills without a domain prefix are generic tools (not tied to frontend or backen
 |---|---|
 | [application](.claude/skills/application/SKILL.md) | Generic app development — feature spec/plan documentation, code/spec sync rules, post-implementation verification |
 | [claude-skill](.claude/skills/claude-skill/SKILL.md) | Best practices for writing Claude Code skills — structure, scope, content rules, generic vs. project-specific |
+| [git-readonly](.claude/skills/git-readonly/SKILL.md) | Restricts git usage to read-only commands — diff, log, branch listing, status — never stash, commit, checkout, revert |
 
 ### Frontend
 

@@ -14,6 +14,32 @@ description: React + TypeScript conventions — strict typing, component decompo
 
 Never use `style={{…}}` for static values — always create a CSS class instead. Inline styles are only acceptable for truly dynamic values (e.g. a color coming from data).
 
+## Event handlers as named functions
+
+Handlers are defined as named functions inside the component, never inline in JSX (no `onClick={() => …}` with logic). Bind static args via closures over component scope, not inline arrow bodies.
+
+```tsx
+function handleNavigateToLang() {
+  navigate(`/lang/${code}`);
+}
+
+<button onClick={handleNavigateToLang}>…</button>
+```
+
+## Loops in templates
+
+Loops in JSX (`.map`, etc.) must delegate rendering to a named function defined in the component, not inline an arrow function body with JSX inside `.map`.
+
+```tsx
+function LangCardItem(code: string) {
+  return (
+    <LangCard key={code} lang={code} onClick={() => handleLangCardClick(code)} />
+  );
+}
+
+<div>{activeLanguages.map(LangCardItem)}</div>
+```
+
 ## Page template decomposition
 
 Split page templates into **inner functions** defined inside the page component to improve readability. Each function renders a named section or conditional variant. The root `return` stays minimal and reads like an outline.
@@ -73,6 +99,10 @@ if (status === 404 || status === 403) {
   return;
 }
 ```
+
+## Test coverage
+
+If a tests are required in this project, every component, service, and store must have a corresponding test file. Don't skip tests for "simple" components — even a one-line atom gets a render test.
 
 ## Empty select (dropdown)
 

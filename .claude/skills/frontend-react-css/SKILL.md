@@ -270,6 +270,41 @@ Name classes after their role within the component. Since CSS Modules scopes eve
 
 ---
 
+## Mixins — only for real shared property groups
+
+Don't reach for a mixin just because two components share a variable value — that's what shared variables in `_variables.scss` are for. Add a mixin only when multiple components share the same *group* of property declarations (not just one value), e.g. several components all needing the same flex-centering + transition + disabled-state block. One `.module.scss` file still owns the component's unique styles; the mixin only factors out the literally-identical block.
+
+```scss
+// styles/_mixins.scss
+@use "variables" as *;   // mixins need their own @use even if variables are globally injected
+
+@mixin button-base {
+  display:         inline-flex;
+  align-items:     center;
+  justify-content: center;
+  transition:      opacity $transition-fast, transform $transition-fast;
+
+  &.disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+}
+```
+
+```scss
+// Button.module.scss
+.btn {
+  @include button-base;
+  gap: $btn-icon-gap;
+  // ...component-specific styles
+}
+```
+
+If using the Vite path-alias setup below, register `_mixins.scss` alongside `_variables.scss` so every module gets both without an explicit `@use`:
+
+```ts
+additionalData: `@use "${path.resolve(__dirname, 'styles/variables')}" as *; @use "${path.resolve(__dirname, 'styles/mixins')}" as *;`,
+```
+
+---
+
 ## Conditional classes — clsx
 
 Use `clsx` to combine class names. More readable than template literals.
@@ -407,6 +442,22 @@ This automatically imports variables into every `.module.scss` file — no `@use
 .card {
   background: $color-surface;
   padding:    $space-4;
+}
+```
+
+### Avoid the deprecated legacy Sass JS API
+
+The plain `sass` package defaults to its legacy JS API under Vite, which logs a `DEPRECATION WARNING [legacy-js-api]` for every compiled file and will be removed in Dart Sass 2.0.0. Opt into the modern API explicitly:
+
+```ts
+// vite.config.ts
+css: {
+  preprocessorOptions: {
+    scss: {
+      api: 'modern', // or 'modern-compiler' if using the `sass-embedded` package
+      additionalData: `@use "${path.resolve(__dirname, 'src/styles/variables')}" as *;`
+    }
+  }
 }
 ```
 

@@ -36,6 +36,26 @@ if (status === 404 || status === 403) {
 }
 ```
 
+## Lookups with `Array.find()`
+
+`Array.find()` always types its result as `T | undefined`, even in strict mode, because nothing guarantees a match exists. Don't paper over this with `?.` / `??` fallbacks when a missing match actually means corrupted/inconsistent data (e.g. looking up a related record that should always exist) — that silently hides a bug instead of surfacing it.
+
+- Isolate the lookup in its own function
+- If no match should ever be possible given valid data, throw inside that function instead of returning `undefined`
+- This narrows the return type to `T` for callers, removing the need for `?.` everywhere downstream
+
+```ts
+function findLessonTranslation(translationPack: TranslationPack, lessonId: LessonId): LessonTranslation {
+  const lessonTranslation = translationPack.lessons.find((l) => l.id === lessonId);
+  if (!lessonTranslation) {
+    throw new Error(`Missing translation for lesson ${lessonId}`);
+  }
+  return lessonTranslation;
+}
+```
+
+Only keep a silent fallback (`?? defaultValue`) when the absence of a match is an expected, normal case — not a sign of a data bug.
+
 ## Empty select (dropdown)
 
 When a `<select>` may be empty due to missing data, do not display an empty select. Instead:

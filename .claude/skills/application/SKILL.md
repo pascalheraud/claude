@@ -1,6 +1,6 @@
 ---
 name: application
-description: Generic application development conventions — feature documentation (spec + plan), code/spec sync rules, post-implementation verification
+description: Generic application development conventions — feature documentation (spec + plan), code/spec sync rules, post-implementation verification, and status-file tracking for long-running plans. Load this skill whenever the user says to "continue", "resume", "carry on with", or "implement" a plan or a feature (e.g. "continue ce plan", "implémente cette feature", "reprends le développement de X") — before doing any exploration of the code or plan file.
 ---
 
 # Application Development Conventions
@@ -56,3 +56,17 @@ Move the `@Transactional` DB methods into a `@Service` bean so the batch can cal
 ## Rule: run tests after development
 
 After completing backend or frontend development, ask the user whether they want to run the tests before declaring the work done. Do not run tests automatically without asking first.
+
+## Rule: track progress for long-running implementations
+
+When the user asks to continue, resume, or implement a plan or feature, check first — before exploring the code — whether a status file already exists next to the plan/spec (`<plan-name>-status.md`). If it exists, read it first instead of re-deriving progress from the code. If it doesn't exist yet and the plan spans multiple sessions or sprints, create one.
+
+When implementing a feature from a plan that spans multiple sessions or sprints (a plan with several phases/sprints, or any work too large to finish in one sitting), maintain a status file next to the plan: `<plan-name>-status.md` (e.g. `travelingo-plan-phase1-status.md` next to `travelingo-plan-phase1.md`).
+
+The status file tracks, per sprint/phase/component:
+- What's done
+- What's stubbed, mocked, or explicitly deferred (and why)
+- What's not started
+- Open decisions that block resuming the work
+
+Update it at the end of each work session that makes meaningful progress on the plan — not after every small edit. When resuming work on a long-running plan, read the status file first instead of re-deriving progress from the code or re-deciding settled questions.
