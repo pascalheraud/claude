@@ -13,6 +13,9 @@ A controller **calls the repository directly** if and only if the endpoint makes
 
 As soon as there is **more than one call** (read + write, multiple reads, multi-entity orchestration, or non-trivial business logic), the logic is extracted into a `@Service` bean.
 
+- **The controller decides which columns to load**, as much as possible, and passes that column list as a parameter to the service. This keeps the "what data does this response need" decision at the HTTP boundary, close to where the response shape is defined.
+- **The controller never passes HTTP-layer objects to a service** (`HttpServletRequest`, `HttpServletResponse`, `@RequestParam`/`@RequestBody` raw wrappers, etc.). It is the controller's responsibility to extract whatever it needs from these objects and pass plain, service-usable values (ids, entities, primitives) instead.
+
 ## Controller route guards
 
 - **Update / Delete** — always verify that the resource exists before acting:
@@ -45,6 +48,14 @@ When adding a `NOT NULL` column without a `DEFAULT`, you must **always**:
 2. **Initialize the field before insert** in the creation handler, and **include it in the column list** passed to the insert call.
 
 Missing either step causes either a NOT NULL constraint violation in the database, or a Spring 400 validation error.
+
+## Controller responses — entity vs DTO
+
+- A route returns an **entity** directly when its data is enough as-is.
+- A route returns a **DTO** when the response needs data the entity doesn't carry — computed values, or data composed from several entities/queries. Never add such fields to the entity itself (see [[backend-db]] — entities only hold DB-tied data); build a dedicated class instead.
+- DTO classes are always suffixed `DTO` (e.g. `AuxiliaireAuthDTO`).
+- A DTO is built in a **service**, never in the controller, as soon as it requires an algorithm (e.g. computing a derived flag) or more than one repository call to assemble. If the DTO only wraps a single already-loaded entity with no extra computation, building it inline in the controller is fine.
+- Prefer composition over inheritance to build a DTO around an entity: embed the entity as a field rather than extending it, and use `@JsonUnwrapped` on that field to keep the entity's properties flattened at the top level of the JSON response.
 
 ## Controller — private helper methods
 
