@@ -94,19 +94,27 @@ Google Play propose plusieurs tracks pour gérer les déploiements progressifs :
 
 | Track | Visibilité | Usage |
 |-------|-----------|-------|
-| **Internal testing** | Jusqu'à 100 testeurs (email) | Tests internes, disponible immédiatement |
-| **Closed testing (Alpha)** | Groupes de testeurs définis | Beta fermée |
+| **Internal testing** | Jusqu'à 100 testeurs (email obligatoire) | Tests internes, disponible immédiatement sans examen |
+| **Closed testing (Alpha)** | Groupes de testeurs définis | Beta fermée, passe par examen Google |
 | **Open testing (Beta)** | Public, opt-in | Beta ouverte |
 | **Production** | Tous les utilisateurs | Release officielle |
 
 **Staged rollout** : déployer progressivement (ex: 10% → 50% → 100%) pour détecter les
 problèmes avant d'atteindre tous les utilisateurs. Possible uniquement sur le track Production.
 
-Workflow recommandé :
-1. Internal testing → vérification fonctionnelle
-2. Closed testing (Alpha) → testeurs sélectionnés
-3. Open testing (Beta) optionnel → feedback large
-4. Production avec staged rollout à 10%
+### Mandatory workflow for new developer accounts
+
+Google requires for new accounts: **closed testing with 12 testers for at least 14 days** before production access is granted.
+
+1. **Internal testing** → functional verification on a physical device
+   - Each tester must be added manually by email in a distribution list — no open link
+   - The `/apps/internaltest/XXX` link only works from **Chrome** signed in with an account in the list
+   - The release must be **Active** (not Draft) before sharing the link
+2. **Closed testing** → minimum 12 testers, minimum 14 days
+   - Goes through Google review (delay: a few hours to 7 days)
+   - Open link ("Join on the web") available once approved — share on r/androiddev
+   - The 14 days start from the first tester who joins
+3. **Production** → only accessible after the 14-day closed testing period
 
 ---
 
@@ -137,11 +145,12 @@ Permissions qui déclenchent une **review manuelle** et nécessitent une justifi
 
 ## 7. Play Console — Metadata
 
-### Screenshots (obligatoires)
-- Minimum 2 screenshots téléphone
-- Format : JPEG ou PNG 24 bits, entre 320 px et 3840 px (rapport max 2:1)
-- Taille recommandée : 1080×1920 px (portrait) ou 1920×1080 px (paysage)
-- Tablette : optionnel mais recommandé si l'app supporte les grandes surfaces
+### Screenshots (required)
+- Minimum 2 **phone** screenshots (recommended portrait: 1080×1920 px)
+- Minimum 2 **7" tablet** screenshots — required to save the store listing (recommended: 1200×1920 px)
+- Format: JPEG or PNG 24-bit, between 320 px and 3840 px per side, ratio 16:9 or 9:16
+- **DPR**: always capture with DPR=1 in browser DevTools — DPR=2 doubles the resolution and exceeds the 3840 px limit
+- Capture from Chrome/Firefox DevTools: F12 → phone icon → set resolution manually → DPR=1 → "Capture screenshot" (Chrome) or "···" → "Take a Screenshot" (Firefox)
 
 ### Feature Graphic (obligatoire)
 Banner 1024×500 px affiché en haut de la fiche — obligatoire pour apparaître dans les
