@@ -72,32 +72,114 @@ export default function MyPage() {
 
 Components that use `window`, `Date`, or browser APIs must be wrapped in a `<ClientOnly>` boundary to prevent SSR hydration errors.
 
+## Error UX rule
+
+**Never close a form on error.** When an API call fails, keep the form open and display the error inline (a message inside the form body). Never use a modal/popup to show the error when the form is itself inside a modal — stacked modals close each other. Only close a form after a successful operation.
+
 ## API error handling
 
-### 500 — Internal server error
+### Global error popup (automatic)
+
+Wire a global error handler once at the layout level (`ErrorProvider`). API helpers call it automatically on failure — no `.catch()` needed per call site.
 
 ```tsx
-const [internalError, setInternalError] = useState(false);
+// layout.tsx — register once
+import { registerGlobalErrorHandler } from "../model/utils";
 
-// in API call catch:
-.catch((e) => {
-  if (e.serverError) setInternalError(true);
-});
+export function ErrorProvider({ children }) {
+  const [message, setMessage] = useState<string | null>(null);
+  const onFinallyRef = useRef<(() => void) | undefined>(undefined);
 
-// in JSX:
-{internalError && (
-  <InternalErrorPopup onClose={() => setInternalError(false)} />
-)}
+  useEffect(() => {
+    registerGlobalErrorHandler((onFinally) => {
+      onFinallyRef.current = onFinally;
+      setMessage("Une erreur s'est produite. Veuillez réessayer.");
+    });
+  }, []);
+
+  function handleClose() {
+    setMessage(null);
+    const fn = onFinallyRef.current;
+    onFinallyRef.current = undefined;
+    fn?.();
+  }
+
+  return (
+    <ErrorContext.Provider value={…}>
+      {children}
+      {message !== null && <ErrorPopup message={message} onClose={handleClose} />}
+    </ErrorContext.Provider>
+  );
+}
+
+// In API helpers — withErrorHandling fires globalErrorHandler on error
+function withErrorHandling(promise, options) {
+  return promise
+    .catch(normalizeError)
+    .catch((e) => {
+      if (options?.onError) {
+        options.onError(e);
+        options.onFinally?.();
+      } else {
+        globalErrorHandler?.(options?.onFinally); // passes onFinally to the popup
+      }
+      return new Promise(() => {}); // never resolves — .then() is skipped silently
+    })
+    .then((result) => {
+      options?.onFinally?.();
+      return result;
+    });
+}
+
+// Call site — no .catch() needed, error popup fires automatically
+post("/api/resource", payload, ["field"]).then(() => { … });
 ```
 
-### 404 / 403 — Update or Delete
+### onFinally — re-enable buttons / reset loading state
+
+Pass `onFinally` in the options object. **On success** it fires immediately after `.then()`. **On error** it fires when the user closes the error popup — the button stays disabled until the user acknowledges the error.
 
 ```ts
+post("/api/resource", payload, ["field"], {
+  onFinally: () => setLoading(false),
+}).then(() => { … });
+```
+
+### Custom error handling (onError)
+
+When a call site needs to handle a specific error (e.g. 400 inline message), pass `onError`. The global popup is suppressed; the caller is fully in control. `onFinally` fires immediately after `onError`.
+
+```ts
+post("/api/resource", payload, ["field"], {
+  onError: (e) => {
+    if (e.networkError) setInlineError("Opération impossible.");
+    else globalErrorHandler?.(); // re-trigger for 500
+  },
+  onFinally: () => setLoading(false),
+}).then(() => { … });
+```
+
+### 404 / 403 — inspecting status directly
+
+For calls where you need the raw HTTP status (e.g. DELETE returning 204/404), use `fetchJson` and call `showError()` manually for 5xx:
+
+```ts
+const { showError } = useGlobalError();
 const { status } = await fetchJson(`/api/resource/${id}`, { method: "DELETE" });
-if (status === 404 || status === 403) {
-  setError("Resource not found.");
-  return;
-}
+if (status >= 500) showError();
+if (status === 404) setError("Resource not found.");
+```
+
+### Error in a modal — always inline
+
+Never open an error popup on top of a modal — stacked modals close each other. Show the error as an inline `<p>` inside the modal body instead.
+
+```tsx
+// ✗ wrong — InternalErrorPopup inside a modal closes the parent modal when dismissed
+{error && <InternalErrorPopup onClose={() => setError(false)} />}
+
+// ✓ correct — inline message inside the form/modal body
+{error && <p>Une erreur est survenue, veuillez réessayer.</p>}
 ```
 
 ## Test coverage
