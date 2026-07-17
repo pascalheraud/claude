@@ -106,12 +106,13 @@ préparation jusqu'à la mise en ligne, dans l'ordre chronologique.
 
 ## PHASE 3 — Assets visuels
 
-- [ ] **Icône** 512×512 px, PNG 32 bits avec couche alpha
-- [ ] **Feature Graphic** 1024×500 px, JPEG ou PNG sans alpha — obligatoire
-- [ ] **Screenshots téléphone** : min. 2, format JPEG ou PNG, entre 320–3840 px (ratio max 2:1)
-- [ ] Screenshots tablette 7" (optionnel, recommandé si l'app supporte les tablettes)
-- [ ] Screenshots tablette 10" (optionnel, recommandé si l'app supporte les tablettes)
-- [ ] **Vidéo** (optionnel) : URL YouTube, vidéo publique ou non listée
+- [ ] **Icon** 512×512 px, PNG 32-bit with alpha channel
+- [ ] **Feature Graphic** 1024×500 px, JPEG or PNG without alpha — required
+- [ ] **Phone screenshots**: min. 2, JPEG or PNG, between 320–3840 px per side (ratio 9:16 or 16:9) — recommended 1080×1920 px, DPR=1
+- [ ] **7" tablet screenshots**: min. 2, **required** to save the store listing — recommended 1200×1920 px, DPR=1
+- [ ] 10" tablet screenshots (optional)
+- [ ] **Capture from browser DevTools**: F12 → phone icon → set resolution manually → DPR=1 → take screenshot. Never use DPR=2 (doubles resolution, exceeds 3840 px limit)
+- [ ] **Video** (optional): YouTube URL, public or unlisted
 
 ## PHASE 4 — Classification & confidentialité
 
@@ -142,20 +143,24 @@ préparation jusqu'à la mise en ligne, dans l'ordre chronologique.
 - [ ] **versionCode** incrémenté (entier strict, +1 minimum par rapport au dernier upload)
 - [ ] **versionName** mis à jour si applicable
 
-## PHASE 6 — Soumission
+## PHASE 6 — Submission
 
-- [ ] AAB uploadé dans le bon track (Internal → Closed → Open → Production)
-- [ ] Workflow recommandé respecté :
-  - [ ] Internal testing validé par l'équipe
-  - [ ] Closed testing (Alpha) si testeurs externes
-  - [ ] Production avec staged rollout (10% → 50% → 100%)
-- [ ] Toutes les sections obligatoires de la Play Console au statut ✅ (barre de progression verte)
-- [ ] Review soumise → statut "In review"
+**New developer accounts**: Google requires closed testing with 12 testers for 14 days before production access.
 
-## PHASE 7 — Après soumission
+- [ ] Upload AAB to Internal testing track → verify on physical device
+  - Each tester must be added by email to a distribution list (no open link for internal testing)
+  - Open link from **Chrome** signed in with an account in the list; release must be **Active** (not Draft)
+- [ ] Upload AAB to Closed testing track → submit for Google review (delay: a few hours to 7 days)
+  - Once approved, get the open link: Testers → "Join on the web" → share on r/androiddev
+  - Wait for 12 testers and 14 days (starting from the first tester who joins)
+- [ ] Request production access from the Play Console dashboard after 14 days
+- [ ] Upload AAB to Production → all left-nav sections green ✅
+- [ ] Submit for review → status "In review"
 
-- [ ] Surveiller les notifications Play Console et email développeur
-- [ ] En cas de rejet : lire le motif dans Policy status avant de re-soumettre
-- [ ] En cas de suspension : utiliser le bouton Appeal dans Policy status
-- [ ] Staged rollout : surveiller les métriques (crashes, ANR, notes) avant d'élargir le déploiement
-- [ ] Arrêter le rollout immédiatement si crash rate > 1% ou note en forte baisse
+## PHASE 7 — After submission
+
+- [ ] Monitor Play Console notifications and developer email
+- [ ] If rejected: read the reason in Policy status before resubmitting
+- [ ] If suspended: use the Appeal button in Policy status
+- [ ] Staged rollout: monitor metrics (crashes, ANR, ratings) before expanding rollout
+- [ ] Stop rollout immediately if crash rate > 1% or ratings drop sharply
