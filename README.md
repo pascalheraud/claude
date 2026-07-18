@@ -36,6 +36,7 @@ Skills without a domain prefix are generic tools (not tied to frontend or backen
 | [application](.claude/skills/application/SKILL.md) | Generic app development — feature spec/plan documentation, code/spec sync rules, post-implementation verification |
 | [claude-skill](.claude/skills/claude-skill/SKILL.md) | Best practices for writing Claude Code skills — structure, scope, content rules, generic vs. project-specific |
 | [git-readonly](.claude/skills/git-readonly/SKILL.md) | Restricts git usage to read-only commands — diff, log, branch listing, status — never stash, commit, checkout, revert |
+| [test-e2e](.claude/skills/test-e2e/SKILL.md) | Generic End-to-End testing — real app/DB in production mode, mocked external dependencies, scenarios, Given/When/Then, PageObject pattern |
 
 ### Frontend
 
@@ -73,7 +74,9 @@ Skills without a domain prefix are generic tools (not tied to frontend or backen
 |---|---|
 | [backend-java](.claude/skills/backend-java/SKILL.md) | General Java conventions — naming, Boolean handling, var, loops, streams |
 | [backend-java-db](.claude/skills/backend-java-db/SKILL.md) | Java database access — column loading, required columns documentation, partial entity patterns |
+| [backend-java-test-data-builder](.claude/skills/backend-java-test-data-builder/SKILL.md) | Test data seeding via raw SQL only (no entities/repositories) — templated data clusters, naming, ordered insert/delete |
 | [backend-java-spring-boot](.claude/skills/backend-java-spring-boot/SKILL.md) | Spring Boot conventions — controllers, services, entities, validation, controller tests |
+| [java-test-e2e](.claude/skills/java-test-e2e/SKILL.md) | Java E2E testing — Playwright, Testcontainers, one scenario class per scenario. Builds on [[test-e2e]] |
 
 #### Backend › Database
 
