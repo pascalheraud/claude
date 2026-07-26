@@ -15,6 +15,20 @@ E2E tests drive a real browser against:
 
 This means an E2E test exercises the same code path a real user would hit — no mocked backend, no in-memory DB, no dev-only behavior masking a bug that would only show up in production mode.
 
+## Writing E2E tests never touches application code
+
+Writing or extending E2E tests is a **read-only exercise against the app's existing behavior** — the goal is to describe what the app actually does, not to shape what it does. While writing E2E tests, application/production code is never modified, not even for a one-line fix that looks obviously safe or unrelated to the test itself.
+
+This includes, without exception:
+- "Obvious" bugs noticed while exploring the app to write a test.
+- Behavior that doesn't match the feature's spec (the test should encode the spec mismatch as a documented deviation, or ask, not silently correct the app to match the spec).
+- Anything that would make a stubborn test pass (adjusting a response code, a validation rule, an error message, timing/async behavior) rather than adjusting the test to match reality.
+- Refactors that would make the app "more testable" (extracting a hook, exposing an id, adding a test-only branch) unless the project's own conventions already call for that pattern independent of testing.
+
+**At the first sign this boundary is about to be crossed — or already has been — stop and report to the user** instead of continuing or self-correcting silently: a test failing because the app's real behavior differs from what was assumed, a fix that would require touching non-test code to go green, an ambiguous case where "fix the app" vs "fix the test" isn't obvious. Report what was observed, what the two options are, and let the user decide — don't pick "fix the app" as the default resolution.
+
+The one narrow exception a project skill may define is test-only scaffolding required to make the app observable/controllable in a test environment at all (e.g. the mocking seams described below, or a dedicated TEST environment flag) — never a change to real business logic, validation, or user-facing behavior.
+
 ## External dependencies: mocked via a TEST environment, not the real thing
 
 Dependencies external to the application itself — sending emails, third-party APIs, payment providers, anything that leaves the process boundary — are **mocked**, not called for real, even though the app otherwise runs in production mode ([[test-e2e]]'s "real app" rule is about *the app's own code path*, not about reaching third parties from a test run).
