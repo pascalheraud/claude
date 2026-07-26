@@ -1,30 +1,18 @@
 ---
 name: backend-java-spring-boot
-description: General Spring Boot backend conventions — Controllers, Services, Entities, validation, and controller tests
+description: Spring Boot-specific backend conventions — Controllers, Services, Entities, validation, transactions, and controller tests. Builds on the generic backend-api skill.
 ---
 
 # Spring Boot Backend Conventions
 
+Spring Boot/Java-specific implementation of the [[backend-api]] conventions. Load [[backend-api]] first — this skill only adds what's specific to Spring Boot; it doesn't repeat the route-guard/status-code/response-shape/DI rules.
+
 ## Controllers vs Services
 
-A controller **calls the repository directly** if and only if the endpoint makes **a single repository call**:
-- a single insert/update/delete passing the entity payload
-- a single read
+Same split as [[backend-api]]'s "route handler vs service layer": a controller **calls the repository directly** if and only if the endpoint makes **a single repository call**; anything more goes into a `@Service` bean.
 
-As soon as there is **more than one call** (read + write, multiple reads, multi-entity orchestration, or non-trivial business logic), the logic is extracted into a `@Service` bean.
-
-- **The controller decides which columns to load**, as much as possible, and passes that column list as a parameter to the service. This keeps the "what data does this response need" decision at the HTTP boundary, close to where the response shape is defined.
-- **The controller never passes HTTP-layer objects to a service** (`HttpServletRequest`, `HttpServletResponse`, `@RequestParam`/`@RequestBody` raw wrappers, etc.). It is the controller's responsibility to extract whatever it needs from these objects and pass plain, service-usable values (ids, entities, primitives) instead.
-
-## Controller route guards
-
-- **Update / Delete** — always verify that the resource exists before acting:
-  - Resource not found → `404 Not Found` (`HttpStatus.NOT_FOUND`)
-  - Resource found but belonging to another user → `403 Forbidden` (`HttpStatus.FORBIDDEN`)
-- **Any access to user-owned data** (read or write) must verify upfront that the logged-in user is the owner. Load the ownership field from the database, compare it with the connected user's id, and return `403 Forbidden` if the check fails. Never trust an id from the payload or the URL.
-- **Post (creation)** — if the domain forbids duplicates on a field, check for absence of a duplicate before inserting and return `409 Conflict` (`HttpStatus.CONFLICT`) if one is detected.
-- **State-gated actions** — any action that only applies to a resource in a specific state must load the current state from the database and verify it before proceeding. If the state doesn't match, return `409 Conflict`. Never rely on the client having sent the resource in the right state — always re-read from the DB.
-- **State predicates belong on the enum** — never write inline multi-value statut checks in controllers or services (e.g. `statut != A && statut != B`). Instead, define a boolean method on the enum (e.g. `isEnvoyable()`, `isSupprimable()`) and call it from the controller. This centralises the allowed-state logic and keeps it close to the domain model.
+- **The controller decides which columns to load**, passing that column list as a parameter to the service.
+- **The controller never passes HTTP-layer objects to a service** (`HttpServletRequest`, `HttpServletResponse`, `@RequestParam`/`@RequestBody` raw wrappers, etc.) — extract plain values first.
 
 ## Controllers
 
@@ -33,6 +21,7 @@ As soon as there is **more than one call** (read + write, multiple reads, multi-
 - **All controller inputs are validated:**
   - When the request body is a **reusable entity**, define validation marker interfaces inside the entity class and annotate fields with `@NotNull(groups = MyGroup.class)`. Use `@Validated(MyGroup.class)` on the controller parameter.
   - When the request body is a **dedicated payload** (single-purpose), use a **bean class** (not a record) with `@Data @NoArgsConstructor` (Lombok), annotate fields with Jakarta constraints (`@NotBlank`, `@NotNull`, etc.) and use `@Valid` on the controller parameter.
+- Route guards (404/403/409, ownership, state-gating) and the "no intentional 500" rule follow [[backend-api]] as-is — implement them with `ResponseStatusException`/`@ResponseStatus`/a `ResponseEntity` status, never an uncaught plain exception standing in for a real status code.
 
 ## Entities
 
@@ -51,11 +40,11 @@ Missing either step causes either a NOT NULL constraint violation in the databas
 
 ## Controller responses — entity vs DTO
 
-- A route returns an **entity** directly when its data is enough as-is.
-- A route returns a **DTO** when the response needs data the entity doesn't carry — computed values, or data composed from several entities/queries. Never add such fields to the entity itself (see [[backend-db]] — entities only hold DB-tied data); build a dedicated class instead.
+Same principle as [[backend-api]]'s "response shape" rule, in Spring Boot terms:
+
 - DTO classes are always suffixed `DTO` (e.g. `AuxiliaireAuthDTO`).
-- A DTO is built in a **service**, never in the controller, as soon as it requires an algorithm (e.g. computing a derived flag) or more than one repository call to assemble. If the DTO only wraps a single already-loaded entity with no extra computation, building it inline in the controller is fine.
-- Prefer composition over inheritance to build a DTO around an entity: embed the entity as a field rather than extending it, and use `@JsonUnwrapped` on that field to keep the entity's properties flattened at the top level of the JSON response.
+- A DTO is built in a **service**, never in the controller, as soon as it requires an algorithm or more than one repository call to assemble. If it only wraps a single already-loaded entity with no extra computation, building it inline in the controller is fine.
+- Prefer composition over inheritance: embed the entity as a field rather than extending it, and use `@JsonUnwrapped` on that field to keep the entity's properties flattened at the top level of the JSON response.
 
 ## Controller — private helper methods
 
@@ -79,7 +68,7 @@ private void checkOwnership(Long newsletterId, Long userId) {
 
 ## Time management
 
-Never call `new Date()` or `LocalDateTime.now()` directly in business code — these calls cannot be controlled in tests.
+Spring Boot implementation of [[backend-api]]'s "time as an injectable dependency" rule: never call `new Date()` or `LocalDateTime.now()` directly in business code.
 
 Define an injectable `ITime` interface and mock it in tests:
 
@@ -111,7 +100,7 @@ ITime fixedTime = () -> new Date(1234567890000L);
 
 ## Dependency injection
 
-Always use **constructor injection** — never `@Autowired` on fields.
+Spring Boot implementation of [[backend-api]]'s "explicit wiring" rule: always use **constructor injection** — never `@Autowired` on fields.
 
 With Lombok, declare dependencies as `final` fields and annotate the class with `@RequiredArgsConstructor`:
 
@@ -156,6 +145,8 @@ public class MyService {
 `TransactionTemplate` works regardless of the caller, including internal calls within the same service.
 
 ## Controller tests
+
+Spring Boot implementation of [[backend-api]]'s "API tests" focus:
 
 - Use `@WebMvcTest(XxxController.class)` — loads only the web layer (no full Spring context)
 - Declare dependencies as `@MockBean` (repositories, login managers)
