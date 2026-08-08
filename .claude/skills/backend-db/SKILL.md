@@ -9,8 +9,11 @@ description: Generic database design conventions — data integrity independent 
 
 **Golden rule: the database can never be in an inconsistent state**, even if application code has a bug.
 
-- If a column is nullable only under certain conditions (e.g. mandatory when another column has a given value, forbidden otherwise), enforce it with a `CHECK` constraint in the DDL — never rely solely on application code to guarantee it.
-- Same applies to forbidden/invalid value combinations across columns.
+- Any functional state that is not a valid state of the domain must be unrepresentable in the DB — enforce it with a `CHECK` constraint in the DDL, never rely solely on application code to guarantee it.
+- If a column is nullable only under certain conditions (e.g. mandatory when another column has a given value, forbidden otherwise), enforce it with a `CHECK` constraint.
+- Same applies to any combination of column values that would be invalid or incoherent together, even when every column involved is individually valid on its own (e.g. an `ENUM` column set to `TOTAL` requires a paired `count` column to be `> 4`). Express the rule as a `CHECK` constraint, not just as validation in application code.
+- When implementing or reviewing a table, enumerate the functionally impossible states explicitly and check each one is covered by a constraint, not just the ones that came up naturally while writing the DDL.
+- This also applies to every migration that changes an existing table, not just table creation: adding a column, adding a new `ENUM` value, or changing a column's nullability can each introduce new invalid combinations. Re-check existing `CHECK` constraints still cover every impossible state after the change, and add/extend constraints as needed in the same migration.
 - Apply this in both the production schema and the test schema, so integration tests catch violations too.
 
 ## creation_date

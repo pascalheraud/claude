@@ -20,6 +20,17 @@ Any code modification must update or complete the related spec(s) and plan(s):
 - Changing behavior → update the spec to reflect the new behavior
 - If code and spec diverge, fix the spec
 
+## Rule: a plan must not leave open decisions
+
+Everything must be settled during the planning phase. Before presenting a plan as ready, resolve every
+technical decision it depends on — do not leave a "to be decided during implementation" list, a TBD
+cron value, an unresolved architectural choice, or a "confirm this still holds" placeholder. If a
+decision requires information you don't have (checking existing code, an external API's behavior, a
+user preference), go get that information — read the code, search, or ask the user — before finalizing
+the plan, rather than deferring it. Only genuinely implementation-time discoveries (e.g. "this fails at
+runtime for an unforeseen reason") are acceptable to handle later, and even those get recorded in the
+plan's `## Log` once resolved, not left as a pre-existing open item.
+
 ## Rule: verify alignment after backend implementation
 
 After implementing or modifying backend code for a feature, always cross-check:

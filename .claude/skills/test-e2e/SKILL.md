@@ -80,7 +80,13 @@ Each test method is written as **Given/When/Then**, marked with a comment per se
 
 A test with multiple meaningfully-distinct When/Then pairs in sequence (e.g. "submit once, see the error; fix the field, submit again, see success") is fine — repeat the `// When` / `// Then` pair rather than forcing an artificial single pass. What doesn't belong in one test method is multiple *unrelated* Givens bolted together to save setup time — that's the same "don't merge unrelated journeys" rule as scenario-splitting, applied at the method level.
 
-See [[java-test-e2e]] for a worked Java/JUnit example.
+See [[backend-java-test-e2e]] for a worked Java/JUnit example.
+
+## Assert the expected outcome, not just the absence of a bug
+
+A `Then` assertion states what the app is *supposed* to show or do — never just "no error text visible" or "the buggy string isn't there." A negative-only assertion (e.g. checking a title doesn't contain "undefined") still passes for other wrong values the bug could produce (an empty string, a stale name, a swapped field), so it doesn't actually pin down correct behavior — it only rules out the one symptom already noticed. Assert the concrete expected value instead (e.g. the title equals "Contacter " + the seeded auxiliaire's real name), using data available from the Given step (the test-data loader's return value, a known fixture) rather than a value discovered by reading the bug.
+
+This applies to regression tests written after finding a bug, not only to tests written up front: encode what "fixed" looks like, not just what "broken" looked like.
 
 ## Snapshot tests for simple content pages
 
@@ -116,7 +122,7 @@ The PageObject exposes *what can be done or read on the page*, hiding *how* the 
 
 **Reaching a page directly (typing a URL, not clicking through from another page) goes through a static `open` factory, not an instance method.** Each PageObject exposes a `static` (or language-equivalent — a module-level function, a named constructor) method — named `open`, taking the framework's page/browser-context handle plus whatever the URL needs (path params, query params) — that performs the navigation and returns the already-navigated PageObject instance. This keeps "how do I land on this page from nothing" and "what can I do once I'm here" both owned by the same class, without a separate constructor-then-navigate dance at every call site.
 
-See [[java-test-e2e]] for a worked Java example (`LoginPage`/`AccountPage`, including the "returns the destination page's PageObject" rule above).
+See [[backend-java-test-e2e]] for a worked Java example (`LoginPage`/`AccountPage`, including the "returns the destination page's PageObject" rule above).
 
 ## Project-specific usage
 

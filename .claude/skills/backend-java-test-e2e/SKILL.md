@@ -1,5 +1,5 @@
 ---
-name: java-test-e2e
+name: backend-java-test-e2e
 description: Java End-to-End testing conventions — Playwright for browser automation, Testcontainers to stand up the DB and the app (npm-built frontend), one scenario class per scenario. Builds on the generic test-e2e skill.
 ---
 

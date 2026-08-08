@@ -28,6 +28,15 @@ As soon as there is **more than one call** (read + write, multiple reads, multi-
 - **State-gated actions** — an action that only applies to a resource in a specific state must load the current state from the database and verify it before proceeding; if it doesn't match, return **409 Conflict**. Never rely on the client having sent the resource in the expected state — always re-read from the DB.
 - **State predicates belong on the state type itself** — never write inline multi-value state checks in route handlers or services (e.g. `status != A && status != B`). Define a named predicate on the state's own type (an enum method, a class method, ...) and call that instead. This centralizes the allowed-state logic next to the domain model rather than scattering it across call sites.
 
+## Route identifier: PK vs. external UUID
+
+Don't reach for an external/opaque UUID identifier in a URL by default — decide based on who can reach that route, not habit:
+
+- **Authenticated routes gated by an ownership check** (route guard above: load the resource, compare its owner to the caller, 403 if it doesn't match) — use the resource's own numeric/PK id in the URL (`/resource/{id}`). The ownership check already prevents one user from acting on another's resource; a UUID adds no additional protection there, only extra indirection (a lookup by UUID instead of by PK) for no benefit.
+- **A route reachable without that ownership check** — a public link (e.g. emailed to the resource's owner, or shared/forwarded), or any endpoint where enumerating sequential ids would leak information (existence, approximate count, creation order) to someone who isn't authenticated as the owner — use an external UUID (`external_id`, generated independently of the PK) instead of the PK, so the id can't be enumerated or guessed.
+
+A resource can have both: an internal PK used for every authenticated, ownership-gated route, and a separate external UUID used only for the one or two routes/links that are reachable outside that gate (e.g. a one-click link in a notification email). Don't default the UUID onto every route "for consistency" once one genuinely needs it — that just adds an indirection cost to routes that get no security benefit from it.
+
 ## No route intentionally raises a 500
 
 A `500 Internal Server Error` means "the server hit a bug/unexpected failure" — it is never a deliberate way to signal an expected, name-able condition. No route throws/raises a generic, unhandled exception as a substitute for a real response:
