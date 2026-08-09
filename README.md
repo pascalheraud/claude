@@ -4,85 +4,128 @@ A collection of reusable Claude Code skills for general-purpose use across proje
 
 ## What are skills?
 
-Skills are prompt files that Claude Code loads on demand to provide specialized knowledge or behavior for a given task. They live in `.claude/skills/<skill-name>/SKILL.md` and are invoked via `/skill-name` in the chat.
+Skills are prompt files that Claude Code loads on demand to provide specialized knowledge or behavior for a given task. They live in `.claude/skills/<path>/SKILL.md` and are invoked via `/<name>` in the chat (or `/<dir>:<name>` when two skills share a basename).
 
 ## Structure
 
 ```
 .claude/
   skills/
-    <skill-name>/
-      SKILL.md          # The skill prompt loaded by Claude
-      references/       # Optional reference files loaded on demand
+    <domain>/
+      <skill>/
+        SKILL.md          # The skill prompt loaded by Claude
+        references/       # Optional reference files loaded on demand
+      <subdomain>/
+        <skill>/SKILL.md
 ```
 
-## Naming convention
+Skills are organised as real nested folders — a skill's `name:` is its own directory's basename; the path to it carries the domain/subdomain. A `generic/` subfolder holds the skills in a domain that aren't tied to any particular language (e.g. `backend/generic/api` vs `backend/java/spring-boot`); the repo-root `generic/` holds skills tied to no domain at all. See `generic/claude-skill` for the full naming convention.
 
-Skills are organised with a prefix hierarchy that simulates folders. Two levels of prefix are used:
+## Adopting this repo à la carte
 
+Because the hierarchy is real folders, a consuming project doesn't have to take every skill in this repo — it can add this repo as a submodule and use `git sparse-checkout` to materialize only the subtree(s) it actually needs (e.g. a backend Java project only wants `backend/java/`, `backend/generic/`, `languages/java/`, `test/`, `generic/`, `tooling/` — not `frontend/`).
+
+```bash
+# from the consuming project's root
+git submodule add https://github.com/pascalheraud/claude .claude/skills/claude
+cd .claude/skills/claude
+git sparse-checkout init --cone
+git sparse-checkout set .claude/skills/backend .claude/skills/generic .claude/skills/tooling .claude/skills/languages .claude/skills/test
+cd -
+git add .gitmodules .claude/skills/claude
+git commit -m "Add claude skills (backend/generic/tooling/languages/test subtrees)"
 ```
-<domain>-<skill>
-<domain>-<subdomain>-<skill>
+
+**This is not automatic on a plain clone.** `.gitmodules` and the submodule's pinned commit are committed and travel with the repo, but `git clone` alone leaves the submodule directory empty, and even `git submodule update --init` on its own restores the *full* tree, not the sparse subset — the `sparse-checkout set` step is local config, not something Git replays for you. Document the exact `sparse-checkout set` command for your project (e.g. in a setup script or this section of your own README) so every clone reapplies the same scope:
+
+```bash
+git submodule update --init
+git -C .claude/skills/claude sparse-checkout set <your subtrees>
 ```
 
-Skills without a domain prefix are generic tools (not tied to frontend or backend).
+Adjust the subtree list to match what the project actually uses — e.g. a React frontend might set `.claude/skills/frontend .claude/skills/languages/typescript .claude/skills/generic .claude/skills/tooling .claude/skills/test`, while a Java backend takes `.claude/skills/backend/java .claude/skills/backend/generic .claude/skills/languages/java .claude/skills/generic .claude/skills/tooling .claude/skills/test`. Skip subtrees you don't use — a backend-only project has no reason to carry `frontend/`, for instance.
 
 ## Skills
 
-### Generic
+### Generic (repo root)
 
 | Skill | Description |
 |---|---|
-| [application](.claude/skills/application/SKILL.md) | Generic app development — feature spec/plan documentation, code/spec sync rules, post-implementation verification |
-| [claude-skill](.claude/skills/claude-skill/SKILL.md) | Best practices for writing Claude Code skills — structure, scope, content rules, generic vs. project-specific |
-| [git-readonly](.claude/skills/git-readonly/SKILL.md) | Restricts git usage to read-only commands — diff, log, branch listing, status — never stash, commit, checkout, revert |
-| [test-e2e](.claude/skills/test-e2e/SKILL.md) | Generic End-to-End testing — real app/DB in production mode, mocked external dependencies, scenarios, Given/When/Then, PageObject pattern |
-| [web](.claude/skills/web/SKILL.md) | Generic public website conventions — keep the sitemap in sync with page additions/removals/renames |
+| [generic/application](.claude/skills/generic/application/SKILL.md) | Generic app development — feature spec/plan documentation, code/spec sync rules, post-implementation verification |
+| [generic/claude-skill](.claude/skills/generic/claude-skill/SKILL.md) | Best practices for writing Claude Code skills — structure, scope, content rules, generic vs. project-specific |
+| [generic/typography](.claude/skills/generic/typography/SKILL.md) | Points to the per-language typography skill matching the locale being written/reviewed |
+| [generic/typography/french](.claude/skills/generic/typography/french/SKILL.md) | French typography rules for i18n translation strings — non-breaking spaces before punctuation and inside guillemets |
+| [generic/typography/english](.claude/skills/generic/typography/english/SKILL.md) | English typography rules for i18n translation strings — regular space before punctuation, straight quotes, dash usage |
+
+### Tooling
+
+| Skill | Description |
+|---|---|
+| [tooling/git](.claude/skills/tooling/git/SKILL.md) | Git conventions — currently: restricting usage to read-only commands (diff, log, branch listing, status) — never stash, commit, checkout, revert |
+
+### Languages
+
+| Skill | Description |
+|---|---|
+| [languages/java](.claude/skills/languages/java/SKILL.md) | General Java coding conventions — naming, Boolean handling, var usage |
+| [languages/typescript](.claude/skills/languages/typescript/SKILL.md) | TypeScript conventions, tied to no framework — currently: restricting `tsc` to non-emitting, check-only invocations |
+
+### Test
+
+| Skill | Description |
+|---|---|
+| [test/e2e](.claude/skills/test/e2e/SKILL.md) | Generic End-to-End testing — real app/DB in production mode, mocked external dependencies, scenarios, Given/When/Then, PageObject pattern |
+| [test/e2e/playwright](.claude/skills/test/e2e/playwright/SKILL.md) | Playwright conventions, tied to no language binding — Browser/BrowserContext/Page lifecycle, PageObjects holding a Page |
 
 ### Frontend
 
 | Skill | Description |
 |---|---|
-| [frontend-js](.claude/skills/frontend-js/SKILL.md) | Generic JS/TS frontend — model types, API error handling (500/404/403), empty select pattern |
+| [frontend/js](.claude/skills/frontend/js/SKILL.md) | JS/TS frontend conventions, framework-agnostic — model types, API error handling (500/404/403), empty select pattern |
+| [frontend/web](.claude/skills/frontend/web/SKILL.md) | Public website conventions — keep the sitemap in sync with page additions/removals/renames |
 
 #### Frontend › React
 
 | Skill | Description |
 |---|---|
-| [frontend-react](.claude/skills/frontend-react/SKILL.md) | React + TypeScript — strict typing, inner function decomposition, no inline styles, SSR/ClientOnly, API error patterns |
-| [frontend-react-component-design](.claude/skills/frontend-react-component-design/SKILL.md) | Component categorisation, naming suffix vocabulary, props design, state ownership, when to extract |
-| [frontend-react-css](.claude/skills/frontend-react-css/SKILL.md) | SCSS Modules — one file per component, shared variables, clsx, Vite path alias |
-| [frontend-react-folder-structure](.claude/skills/frontend-react-folder-structure/SKILL.md) | Project layout — ui/, features/, services/, hooks/, contexts/, barrel files, import aliases |
-| [frontend-react-routing](.claude/skills/frontend-react-routing/SKILL.md) | React Router v6 — Link vs useNavigate, Back button rules, protected routes, scroll restoration |
-| [frontend-react-services-pattern](.claude/skills/frontend-react-services-pattern/SKILL.md) | Injectable TypeScript service classes, composition root, singleton injection, custom hooks decision flowchart |
-| [frontend-react-typescript](.claude/skills/frontend-react-typescript/SKILL.md) | Named exports, Props interface, no business logic in components, avoid any, shared models.ts |
+| [frontend/react](.claude/skills/frontend/react/SKILL.md) | React + TypeScript — strict typing, inner function decomposition, no inline styles, SSR/ClientOnly, API error patterns |
+| [frontend/react/component-design](.claude/skills/frontend/react/component-design/SKILL.md) | Component categorisation, naming suffix vocabulary, props design, state ownership, when to extract |
+| [frontend/react/css](.claude/skills/frontend/react/css/SKILL.md) | SCSS Modules — one file per component, shared variables, clsx, Vite path alias |
+| [frontend/react/folder-structure](.claude/skills/frontend/react/folder-structure/SKILL.md) | Project layout — ui/, features/, services/, hooks/, contexts/, barrel files, import aliases |
+| [frontend/react/routing](.claude/skills/frontend/react/routing/SKILL.md) | React Router v6 — Link vs useNavigate, Back button rules, protected routes, scroll restoration |
+| [frontend/react/services-pattern](.claude/skills/frontend/react/services-pattern/SKILL.md) | Injectable TypeScript service classes, composition root, singleton injection, custom hooks decision flowchart |
+| [frontend/react/test-vitest](.claude/skills/frontend/react/test-vitest/SKILL.md) | Vitest unit-testing conventions — config setup, jsdom/globals gotchas, test scope, test file structure |
+| [frontend/react/french-typography](.claude/skills/frontend/react/french-typography/SKILL.md) | French typography in JSX text nodes — `&nbsp;` entity, builds on [[french]] |
+| [frontend/react/typescript](.claude/skills/frontend/react/typescript/SKILL.md) | Named exports, Props interface, no business logic in components, avoid any, shared models.ts |
 
 #### Frontend › Mobile
 
 | Skill | Description |
 |---|---|
-| [frontend-mobile-capacitor](.claude/skills/frontend-mobile-capacitor/SKILL.md) | UI/UX for Capacitor apps — safe area, status bar, back button, gestures, splash screen, Android/iOS specifics |
-| [frontend-mobile-app-stores](.claude/skills/frontend-mobile-app-stores/SKILL.md) | App Store & Google Play submission — metadata, signing, review rules, privacy, Data Safety |
-| [frontend-mobile-github-actions-android](.claude/skills/frontend-mobile-github-actions-android/SKILL.md) | GitHub Actions CI/CD for Capacitor Android — APK/AAB build, signing, Play Store upload |
-| [frontend-mobile-posthog](.claude/skills/frontend-mobile-posthog/SKILL.md) | PostHog analytics in Capacitor/React — setup, AnalyticsService, event naming, GDPR, offline buffering |
-| [frontend-mobile-sentry](.claude/skills/frontend-mobile-sentry/SKILL.md) | Sentry error monitoring in Capacitor/React — setup, ErrorService, GDPR, iOS/Android native setup |
+| [frontend/mobile/capacitor](.claude/skills/frontend/mobile/capacitor/SKILL.md) | UI/UX for Capacitor apps — safe area, status bar, back button, gestures, splash screen, Android/iOS specifics |
+| [frontend/mobile/app-stores](.claude/skills/frontend/mobile/app-stores/SKILL.md) | App Store & Google Play submission — metadata, signing, review rules, privacy, Data Safety |
+| [frontend/mobile/github-actions-android](.claude/skills/frontend/mobile/github-actions-android/SKILL.md) | GitHub Actions CI/CD for Capacitor Android — APK/AAB build, signing, Play Store upload |
+| [frontend/mobile/posthog](.claude/skills/frontend/mobile/posthog/SKILL.md) | PostHog analytics in Capacitor/React — setup, AnalyticsService, event naming, GDPR, offline buffering |
+| [frontend/mobile/sentry](.claude/skills/frontend/mobile/sentry/SKILL.md) | Sentry error monitoring in Capacitor/React — setup, ErrorService, GDPR, iOS/Android native setup |
 
 ### Backend
+
+#### Backend › Generic (language-agnostic)
+
+| Skill | Description |
+|---|---|
+| [backend/generic/api](.claude/skills/backend/generic/api/SKILL.md) | Generic backend API — route handler vs service split, route guards, status-code discipline, response shape, injectable time |
+| [backend/generic/emails](.claude/skills/backend/generic/emails/SKILL.md) | Conventions for links inside transactional/plain-text emails |
+| [backend/generic/db](.claude/skills/backend/generic/db/SKILL.md) | Generic database design — data integrity independent of any specific DBMS |
+| [backend/generic/db/postgresql](.claude/skills/backend/generic/db/postgresql/SKILL.md) | PostgreSQL schema — naming, FK rules, default values, test schema patterns with Testcontainers |
+| [backend/generic/db/postgis](.claude/skills/backend/generic/db/postgis/SKILL.md) | PostGIS geometry columns — coordinate order, SRID, insert syntax, test schema differences |
+| [backend/generic/db/liquibase](.claude/skills/backend/generic/db/liquibase/SKILL.md) | Liquibase migrations — SQL format, changeset rules, adding NOT NULL columns to existing tables |
 
 #### Backend › Java
 
 | Skill | Description |
 |---|---|
-| [backend-java](.claude/skills/backend-java/SKILL.md) | General Java conventions — naming, Boolean handling, var, loops, streams |
-| [backend-java-db](.claude/skills/backend-java-db/SKILL.md) | Java database access — column loading, required columns documentation, partial entity patterns |
-| [backend-java-test-data-builder](.claude/skills/backend-java-test-data-builder/SKILL.md) | Test data seeding via raw SQL only (no entities/repositories) — templated data clusters, naming, ordered insert/delete |
-| [backend-java-spring-boot](.claude/skills/backend-java-spring-boot/SKILL.md) | Spring Boot conventions — controllers, services, entities, validation, controller tests |
-| [backend-java-test-e2e](.claude/skills/backend-java-test-e2e/SKILL.md) | Java E2E testing — Playwright, Testcontainers, one scenario class per scenario. Builds on [[test-e2e]] |
-
-#### Backend › Database
-
-| Skill | Description |
-|---|---|
-| [backend-db-postgresql](.claude/skills/backend-db-postgresql/SKILL.md) | PostgreSQL schema — naming, FK rules, default values, test schema patterns with Testcontainers |
-| [backend-db-postgis](.claude/skills/backend-db-postgis/SKILL.md) | PostGIS geometry columns — coordinate order, SRID, insert syntax, test schema differences |
-| [backend-db-liquibase](.claude/skills/backend-db-liquibase/SKILL.md) | Liquibase migrations — SQL format, changeset rules, adding NOT NULL columns to existing tables |
+| [backend/java/db](.claude/skills/backend/java/db/SKILL.md) | Java database access — column loading, required columns documentation, partial entity patterns |
+| [backend/java/spring-boot](.claude/skills/backend/java/spring-boot/SKILL.md) | Spring Boot conventions — controllers, services, entities, validation, controller tests. Builds on [[api]] |
+| [backend/java/test](.claude/skills/backend/java/test/SKILL.md) | Generic Java backend unit/integration testing — deterministic test data |
+| [backend/java/test/playwright](.claude/skills/backend/java/test/playwright/SKILL.md) | Java E2E testing with Playwright for Java — Testcontainers, one scenario class per scenario. Builds on [[test/e2e]] and [[test/e2e/playwright]] |
