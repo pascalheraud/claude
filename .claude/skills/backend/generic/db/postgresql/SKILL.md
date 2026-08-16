@@ -5,6 +5,12 @@ description: PostgreSQL schema conventions — naming, foreign keys, default val
 
 # PostgreSQL Conventions
 
+## Schema
+
+- Create a dedicated schema named after the application (not `public`) and put the application's tables there — e.g. `danslafoule.hello_worlds` rather than `public.hello_worlds`.
+- Reasons: keeps `public` free of app-specific objects (relevant if the database is ever shared with other apps or extensions), makes ownership/grants easier to scope per app, and makes table references unambiguous (`<app>.<table>`) in tooling and logs.
+- Set the connection's default `search_path` to the app schema (e.g. via the SQLAlchemy engine/session or a `SET search_path` at connection time) so ORM code doesn't need to schema-qualify every table.
+
 ## Naming
 
 - Table and column names: **snake_case**

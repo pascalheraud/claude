@@ -68,6 +68,13 @@ Adjust the subtree list to match what the project actually uses — e.g. a React
 | Skill | Description |
 |---|---|
 | [languages/java](.claude/skills/languages/java/SKILL.md) | General Java coding conventions — naming, Boolean handling, var usage |
+| [languages/python](.claude/skills/languages/python/SKILL.md) | Python language conventions independent from any framework or tooling choice — typing, module structure, version-specific feature reference |
+| [languages/python/python-3.11](.claude/skills/languages/python/python-3.11/SKILL.md) | Python 3.11-specific features — exception groups, TaskGroup, tomllib, typing additions |
+| [languages/python/tooling/poetry](.claude/skills/languages/python/tooling/poetry/SKILL.md) | Dependency and build management with Poetry |
+| [languages/python/tooling/pyenv](.claude/skills/languages/python/tooling/pyenv/SKILL.md) | Python interpreter version management with Pyenv |
+| [languages/python/tooling/pyinstaller](.claude/skills/languages/python/tooling/pyinstaller/SKILL.md) | Standalone executable packaging with PyInstaller |
+| [languages/python/tooling/cibuildwheel](.claude/skills/languages/python/tooling/cibuildwheel/SKILL.md) | Multi-platform wheel builds with cibuildwheel |
+| [languages/python/tooling/pyarmor](.claude/skills/languages/python/tooling/pyarmor/SKILL.md) | Code protection/obfuscation with PyArmor |
 | [languages/typescript](.claude/skills/languages/typescript/SKILL.md) | TypeScript conventions, tied to no framework — currently: restricting `tsc` to non-emitting, check-only invocations |
 
 ### Test
@@ -76,6 +83,7 @@ Adjust the subtree list to match what the project actually uses — e.g. a React
 |---|---|
 | [test/e2e](.claude/skills/test/e2e/SKILL.md) | Generic End-to-End testing — real app/DB in production mode, mocked external dependencies, scenarios, Given/When/Then, PageObject pattern |
 | [test/e2e/playwright](.claude/skills/test/e2e/playwright/SKILL.md) | Playwright conventions, tied to no language binding — Browser/BrowserContext/Page lifecycle, PageObjects holding a Page |
+| [test/pytest](.claude/skills/test/pytest/SKILL.md) | Python testing conventions with pytest — fixtures, parametrization, determinism |
 
 ### Frontend
 
@@ -129,3 +137,11 @@ Adjust the subtree list to match what the project actually uses — e.g. a React
 | [backend/java/spring-boot](.claude/skills/backend/java/spring-boot/SKILL.md) | Spring Boot conventions — controllers, services, entities, validation, controller tests. Builds on [[api]] |
 | [backend/java/test](.claude/skills/backend/java/test/SKILL.md) | Generic Java backend unit/integration testing — deterministic test data |
 | [backend/java/test/playwright](.claude/skills/backend/java/test/playwright/SKILL.md) | Java E2E testing with Playwright for Java — Testcontainers, one scenario class per scenario. Builds on [[test/e2e]] and [[test/e2e/playwright]] |
+
+#### Backend › Python
+
+| Skill | Description |
+|---|---|
+| [backend/python](.claude/skills/backend/python/SKILL.md) | Python backend conventions — layering, DI, persistence boundaries. Builds on [[api]] and [[languages/python]] |
+| [backend/python/fastapi](.claude/skills/backend/python/fastapi/SKILL.md) | FastAPI conventions — routers, Pydantic models, dependency injection, error handling, route tests. Builds on [[api]] and [[backend/python]] |
+| [backend/python/test](.claude/skills/backend/python/test/SKILL.md) | Python backend testing conventions, independent of the web/test framework. Builds on [[api]] |

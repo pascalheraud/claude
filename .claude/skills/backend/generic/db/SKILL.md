@@ -21,6 +21,12 @@ description: Generic database design conventions — data integrity independent 
 - Every table has a `creation_date` column, `NOT NULL`, defaulting to `now()`.
 - Depending on the backend's mode of operation, this default can be set either by the database default value itself, or by a backend mechanism that sets it explicitly at insert time — pick whichever matches the project's existing convention for default values (e.g. see [[postgresql]] for the "no DEFAULT in DDL, applied by the application layer" convention).
 
+## Naming
+
+- Tables are named in the singular, like a class name: `contract`, not `contracts`; `client`, not `clients`.
+- Join tables are named using both related table names, singular, separated by an underscore. In a 1→N relation, the "1" side comes first: a client has N contracts, so the join table is `client_contract`.
+- Prefer scoping tables in a schema/namespace (when the DBMS supports it) over prefixing table names: `myapp.contract` and `myapp.client`, not `myapp_contract` or `myapp_client`.
+
 ## Entity scope
 
 - A database entity must only contain data tied to the database: columns, or objects/lists of objects reachable through relations.

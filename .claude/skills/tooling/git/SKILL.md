@@ -44,3 +44,9 @@ This applies in contexts where git is used purely to inspect state (review, inve
 If a task seems to require a mutating command (e.g. "check what's stashed" implying `git stash list` is fine, but resolving it implies `git stash pop`), stop and explain to the user that the action requires a mutating git command, and ask them to run it or explicitly approve it — do not run it yourself even with a justification.
 
 `git stash list` and `git diff stash@{0}` are read-only and allowed; `git stash pop`/`apply`/`drop` are not.
+
+## Monorepo: one `.gitignore` per module
+
+In a monorepo, don't maintain a single root `.gitignore` covering every module's tech stack. Instead, give each module (`backend/`, `frontend/`, etc.) its own `.gitignore`, scoped to that module's own tooling — e.g. `backend/.gitignore` ignores `.venv/`, `__pycache__/`, `.pytest_cache/`; `frontend/.gitignore` ignores `node_modules/`, `dist/`.
+
+Why: keeps each ignore file readable and owned by whoever works in that module, and avoids a root file that grows an unrelated Python/Node/Java section every time a new module is added. Only put genuinely cross-module patterns (editor/OS artifacts like `.DS_Store`, `.idea/`) in the root `.gitignore`, if one exists at all.

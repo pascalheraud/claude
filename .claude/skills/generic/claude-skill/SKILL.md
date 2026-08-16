@@ -85,6 +85,8 @@ A language can still show up in more than one domain (TypeScript in both `fronte
 
 ## Content rules
 
+**A skill describes how to use a tool/pattern, not whether to.** The choice of tool/stack/library is made at the app or project level (a project skill, or the project itself), not by the generic skill. Do not write a "Scope"/"When to use"/"Why" section arguing for the tool's adoption ("use X for...", "X provides a lightweight way to..."), and do not justify the choice. State the conventions directly, as if the choice were already made. The `description:` frontmatter is the only place that names what the skill is *for* — it's read to decide relevance, not to persuade.
+
 **Capture the non-obvious.** A skill should record conventions that cannot be derived by reading the current code — hidden constraints, architectural decisions, invariants, patterns the team has settled on.
 
 Do not document:
