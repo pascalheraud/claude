@@ -28,6 +28,18 @@ Load [[api]] and [[languages/python]] first. This skill only adds the backend-do
 - Use dependency injection for DB sessions, auth context, and service wiring.
 - Prefer explicit status codes and structured error handling as defined in [[api]].
 
+## Logging
+
+- Every HTTP request is logged, including its parameters — query-string/GET parameters and path parameters — not just the method and path. A route hit with no visibility into which resource/filter was requested is not useful for debugging.
+- The concrete mechanism (framework middleware, WSGI/ASGI wrapper, access-log config) is framework-specific — see the stack skill (e.g. [[fastapi]]) for how it's actually wired, and [[api]]'s "Logging" section for the request-correlation convention this ties into.
+
+### Request-id / correlation libraries
+
+Per [[api]]'s request-correlation convention (one id persisting across HTTP + SQL + application logs), a Python backend doesn't need to hand-roll this — pick a library rather than reimplementing a `contextvars`-based id-and-log-filter mechanism from scratch:
+
+- **ASGI stacks (FastAPI/Starlette)**: [[asgi-correlation-id]] — a middleware that generates/reads the id and injects it into every log line via a `logging.Filter`, including SQLAlchemy's query log. The default choice for a FastAPI backend.
+- **WSGI stacks (Flask/Django)**: no single default equivalent — the same `contextvars` + `logging.Filter` pattern `asgi-correlation-id` uses applies, but via a WSGI middleware instead of an ASGI one (e.g. Django's own `request.id`-style middleware patterns, or a hand-wired `threading.local`-based filter for Flask). Document the concrete choice in the project skill once one is made — don't leave this generic skill deciding it.
+
 ## Project-specific usage
 
 A project skill using this backend Python convention should define only the application-specific structure and integration points that are not generic to Python itself, such as:

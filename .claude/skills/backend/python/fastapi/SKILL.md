@@ -86,6 +86,37 @@ In tests, override `get_clock` via `app.dependency_overrides` with a fixed clock
 - The DB session is a request-scoped dependency (`Depends(get_db)`), yielded by a generator/async-generator function that closes/rolls back the session after the request — never a module-level global session shared across requests.
 - Repository/service functions receive the session as a parameter; they never create their own.
 
+## Logging
+
+FastAPI (and Starlette underneath it) does **not** log requests on its own — there's no built-in request/access logger to configure. What looks like a request log when running under Uvicorn is Uvicorn's own access log (method, path, status), not FastAPI's, and it doesn't include query-string/path parameters, request duration, or a correlation id per [[api]]'s "Logging" convention and [[backend/python]]'s HTTP-parameter-logging rule.
+
+Implement it as a middleware, since that's the one place that sees every request/response regardless of which route matched:
+
+```python
+import logging
+import time
+
+logger = logging.getLogger("app.requests")
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start = time.monotonic()
+    response = await call_next(request)
+    duration_ms = (time.monotonic() - start) * 1000
+    logger.info(
+        "%s %s -> %s (%.1fms)",
+        request.method,
+        request.url,  # includes the query string — path params are already part of request.url.path
+        response.status_code,
+        duration_ms,
+    )
+    return response
+```
+
+- `request.url` (not `request.url.path`) is what carries the query string — logging only `request.url.path` silently drops GET/query parameters, which [[backend/python]] requires to be logged.
+- For request-id correlation (the same id showing up on this log line, on any application log inside the route, and on SQLAlchemy's query log per [[sqlalchemy]]), add [[asgi-correlation-id]]'s `CorrelationIdMiddleware` **outside** this one (added after it, so it runs first and the id is already set when this middleware's log line is emitted).
+- Don't log the request/response body by default in this middleware — that's a separate, deliberate decision (payload size, sensitive fields) distinct from logging that a request happened.
+
 ## Route tests
 
 FastAPI implementation of [[api]]'s "API tests" focus:

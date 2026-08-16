@@ -82,6 +82,12 @@ Inject a small clock/time abstraction instead — one method, returning the curr
 
 Prefer whatever the stack's idiomatic **explicit** dependency-injection mechanism is (constructor injection, explicit factory functions, an application-level composition root) over global/implicit lookups (service locators, ambient singletons reached from deep inside business logic, framework magic that hides what a class depends on). Explicit wiring keeps dependencies visible at a glance, makes a class testable without spinning up the whole framework, and turns circular-dependency mistakes into an immediate, loud error instead of a runtime surprise.
 
+## Logging
+
+- **Request correlation**: every request is identifiable by a single id that persists across every log line produced while handling it — the HTTP access log, any SQL query log, and every application log statement in between. Without this, tracing "what happened for this one request" across a busy log stream means guessing from timestamps. The concrete mechanism (a generated/propagated request id stored in a thread-local/async-local context and injected into the log formatter) is stack-specific — see the project's stack skill for the concrete library/middleware.
+- **Silent mechanisms are logged**: anything that runs without a caller directly observing it — a scheduled job, a batch, a background worker, a queue consumer, a TTL/cleanup sweep — logs at least its start (with its parameters/scope: what it's about to process, how much, since when) and its end (what it actually did: how many rows/items affected, how long it took). A batch that only logs on failure is invisible when it's silently doing nothing or doing the wrong thing — the absence of an error is not evidence it ran correctly.
+- **Service-level start/end**: every service-layer call (the unit identified in "Route handler vs service layer" above — a use case, not a single-line delegation) logs an `INFO` line when it starts and another when it finishes. This gives a log-only trace of what the backend actually did for a request, independent of the HTTP access log, and is what makes the request-correlation id above actually useful — without a marker per service call, there's nothing for that id to tie together beyond "a request happened." Keep both lines short (service/use-case name + key identifying parameters); leave detailed intermediate steps to `DEBUG` if needed.
+
 ## API tests
 
 Test focus for a route/handler test, regardless of stack:
