@@ -244,6 +244,44 @@ service si plusieurs composants doivent réagir à la même mutation.
 
 ---
 
+## 6bis. Web-component design systems (Stencil/Lit-based UI kits) inside Capacitor
+
+Design systems shipped as web components (Siemens iX, Ionic Framework itself, Shoelace, etc.) render
+their internal layout inside a **shadow root**. Two consequences that only bite once you're inside a
+Capacitor WebView chasing safe-area bugs:
+
+1. **They often don't read `env(safe-area-inset-*)` directly.** Check whether the library exposes its
+   own CSS custom properties for insets instead (e.g. Siemens iX's `ix-application`/`ix-content`/
+   `ix-menu`/`ix-modal` read `--ix-safe-area-inset-{top,right,bottom,left}`, defaulting to `0`, *not*
+   `env(...)`). Custom properties inherit through shadow boundaries, `env()` padding applied to an
+   ancestor element (e.g. `body`) does not reach into the shadow tree — so "I set padding on body and
+   the notch still overlaps the header" usually means the library wants a var bridge, not raw `env()`:
+   ```css
+   :root {
+     --ix-safe-area-inset-top: env(safe-area-inset-top);
+     --ix-safe-area-inset-bottom: env(safe-area-inset-bottom);
+     /* ...right/left the same way; check the specific library's var names */
+   }
+   ```
+   Also check whether the library's own root element sizes itself with `100vh`/`100vw` (as
+   `ix-application` does) rather than `100%` — if so, padding on `html`/`body` has no effect on it at
+   all, regardless of the safe-area question.
+2. **Hardcoded shadow-DOM spacing can't be overridden by a normal outer selector.** A `:host {...}`
+   rule inside the component's own stylesheet has higher effective priority than a same-specificity
+   outer tag selector from your page's CSS, even though `:host`'s specificity is only that of a
+   pseudo-class. If a component ships a fixed, non-configurable padding/margin that's wrong for a
+   mobile layout (a common desktop-oriented default) and exposes no CSS custom property or `part()`
+   for it, the only lever from outside is `!important`:
+   ```css
+   /* Only works if the library gives no CSS var for this — check first */
+   ix-content {
+     padding-left: 1rem !important;
+     padding-right: 1rem !important;
+   }
+   ```
+
+---
+
 ## 7. Build Vite + Capacitor
 
 ### `vite.config.ts` — points critiques

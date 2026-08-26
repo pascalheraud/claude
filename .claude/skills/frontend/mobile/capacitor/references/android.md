@@ -2,7 +2,44 @@
 
 ## 1. System bars & insets
 
-### Status bar
+### Android 15 (targetSdkVersion 35+) forces edge-to-edge — read this first
+
+Apps targeting API 35 get edge-to-edge **enforced by the OS**, whether the app opts in or not: the
+WebView is drawn full-bleed behind the status bar, camera cutout, and gesture nav bar. The bug this
+causes: `env(safe-area-inset-*)` can silently report `0` in that state — because the *native* side
+never forwarded the real `WindowInsets` to the WebView — so content ends up hidden under the camera
+cutout or the gesture bar even though your CSS "handles" the safe area correctly. This is easy to
+miss until testing on a real API 35 device/emulator; it doesn't reproduce on desktop Chrome.
+
+Fix — install the community safe-area plugin and enable edge-to-edge natively:
+```bash
+npm install @capacitor-community/safe-area
+npx cap sync android
+```
+```java
+// android/app/src/main/java/.../MainActivity.java
+import android.os.Bundle;
+import androidx.activity.EdgeToEdge;
+import com.getcapacitor.BridgeActivity;
+
+public class MainActivity extends BridgeActivity {
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this); // required — without it env(safe-area-inset-*) can read 0
+    }
+}
+```
+`androidx.activity` (providing `EdgeToEdge`) comes transitively via `androidx.appcompat`, already a
+default Capacitor Android dependency — no new Gradle dependency needed in the common case.
+
+Once installed, this plugin makes `env(safe-area-inset-*)` reliable again (patches older/buggy
+WebView versions with real padding, leaves it alone on fixed versions) — so the rest of this file's
+`env(safe-area-inset-*)` CSS snippets work as written. **Do not** also add `@capacitor/status-bar`:
+the safe-area plugin's own docs say to remove it (they conflict — use the safe-area plugin's System
+Bars API for status bar color/style instead).
+
+### Status bar (only if you are *not* using `@capacitor-community/safe-area`)
 ```typescript
 // Set color and style on every route change
 import { StatusBar, Style } from '@capacitor/status-bar';
@@ -22,12 +59,6 @@ Android's 3-button or gesture nav bar sits at the bottom. Its height varies by d
   padding-bottom: env(safe-area-inset-bottom);
 }
 ```
-
-Use the **Safe Area plugin** for reliable values at runtime:
-```bash
-npm install @capacitor/status-bar
-```
-Then in CSS:
 ```html
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 ```

@@ -67,3 +67,27 @@ the site but missing from the sitemap or not excluded in `robots.txt`, and pages
 `sitemap.xml`/`robots.txt` that no longer exist or aren't actually reachable that way.
 
 The sitemap is what search engines use to discover and re-crawl pages. A page that works but is missing from the sitemap can go unindexed indefinitely.
+
+## Rule: every page must support Back, Forward, and reload (F5)
+
+A web app has "pages" (distinct screens/views) one way or another. Whichever way it's built, the
+browser's Back button, Forward button, and a full reload must all land the user on the same screen
+they were looking at — never on the app's default/home screen by accident. There are two valid ways
+to get this:
+
+- **Real, separate pages** (server-rendered routes, no client-side router, no `#` in the URL): this
+  works automatically — every navigation is a real browser navigation, so Back/Forward/F5 are native
+  browser behavior. Nothing extra to implement.
+- **Client-side "routing" with pseudo-URLs** (an SPA that swaps views via JavaScript instead of full
+  page loads): every "page" the app can show must have its own distinct URL that the router
+  recognizes on direct load, not just in-memory component state (e.g. `useState<Screen>`) with no URL
+  behind it. Requirements for this case:
+  - Back/Forward navigate between the app's screens, not away from the app or to a blank/broken state.
+  - Reloading (F5) on any of those URLs re-opens the same screen, not the app's default screen —
+    exercise this manually (or in e2e tests) for every screen, not just the home route, since it's the
+    case most easily missed during development (the dev server's in-memory state hides it).
+  - See [[routing]] for the concrete implementation (React Router v6: route definitions, typed
+    navigation, when Back should use `replace` vs push).
+
+A screen reachable only through in-memory state and never through a URL is not a page from the
+browser's point of view — Back/Forward/F5 will not do what the user expects.

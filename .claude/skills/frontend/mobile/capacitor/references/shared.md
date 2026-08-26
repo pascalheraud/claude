@@ -227,6 +227,12 @@ npm install @capacitor/status-bar @capacitor/keyboard @capacitor/haptics @capaci
 npx cap sync
 ```
 
+`@capacitor/status-bar` and `@capacitor-community/safe-area` **conflict** — don't install both. On
+Android 15+ (`targetSdkVersion 35+`), edge-to-edge is OS-enforced and `env(safe-area-inset-*)` can
+silently read `0` unless the safe-area plugin is installed *and* native edge-to-edge is enabled in
+`MainActivity` — see `android.md` §1 for the exact fix and why (this bites on real devices/emulators,
+not desktop Chrome, so it's easy to ship unnoticed).
+
 ---
 
 ## 10. Capacitor config template

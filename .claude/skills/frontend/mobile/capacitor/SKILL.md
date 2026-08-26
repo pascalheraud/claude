@@ -29,6 +29,8 @@ Read the relevant reference file(s) before writing any platform-specific code:
 | Situation | Go to |
 |-----------|-------|
 | Back button, status bar color, nav bar insets | `references/android.md` |
+| Safe-area insets read as 0 / content behind camera cutout or gesture bar (Android 15+) | `references/android.md` §1 |
+| UI-kit web component (Siemens iX, Ionic, Shoelace…) ignores `env(safe-area-inset-*)` or has fixed padding you can't override | `references/react.md` §6bis |
 | Safe area, home indicator, swipe-back gesture | `references/ios.md` |
 | Scroll performance, keyboard, dark mode, fonts | `references/shared.md` |
 | Splash screen, app icon, orientation lock | Both platform files |
